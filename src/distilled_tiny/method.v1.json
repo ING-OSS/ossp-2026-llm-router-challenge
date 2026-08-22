@@ -1,0 +1,49 @@
+{
+  "artifact_type": "ossp-distilled-tiny-method-v1",
+  "method_id": "distilled-tiny-generic-head-tail-v4",
+  "student": {
+    "candidate": "generic_head_tail_gain_rank_relation",
+    "seed": 2026,
+    "max_epochs": 9,
+    "batch_size": 128,
+    "eval_batch_size": 256,
+    "max_length": 96,
+    "context_selection": "whole_prompt_head_tail",
+    "tokenizer_prefix": "bert",
+    "hidden_size": 128,
+    "fusion_size": 192,
+    "trainable_layers": 0,
+    "dropout": 0.1,
+    "muon_lr": 0.0002,
+    "adam_lr": 0.0005,
+    "weight_decay": 0.01,
+    "warmup_fraction": 0.1,
+    "max_grad_norm": 1.0
+  },
+  "objective": {
+    "observed_binomial_bce": 1.0,
+    "teacher_adjacent_gain_huber": 1.0,
+    "teacher_gain_rank_bce": 0.1,
+    "teacher_relation_huber": 0.1
+  },
+  "teacher": {
+    "kind": "Qwen embedding teacher ensemble",
+    "artifact": "artifacts/training/full-teacher-targets.npz",
+    "note": "The Tiny model is distilled; no teacher model is needed at inference time."
+  },
+  "runtime_inputs": [
+    "input_ids",
+    "attention_mask",
+    "token_type_ids"
+  ],
+  "runtime": {
+    "default_format": "onnx-float",
+    "optional_format": "onnx-int8",
+    "threads": 2,
+    "batch_size": 128,
+    "artifacts": {
+      "student.onnx": "train",
+      "student.train-dev.onnx": "train+dev"
+    }
+  }
+}

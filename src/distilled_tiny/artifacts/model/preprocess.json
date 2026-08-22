@@ -1,0 +1,16 @@
+{
+  "artifact_type": "ossp-distilled-tiny-preprocess-v1",
+  "model_order": [
+    "ax31-light",
+    "ax31",
+    "axk1-think"
+  ],
+  "models": {
+    "student.onnx": "25088adee9d858eaa84f9fb6efc18572c1c47fbc4f5ff0a576ad62c02703b902",
+    "student.train-dev.onnx": "4a38178365707149a58a8e3d7c1996289fd7bb654e809ccc28aeb8533e757359"
+  },
+  "max_length": 96,
+  "context_selection": "whole_prompt_head_tail",
+  "threads": 2,
+  "batch_size": 128
+}

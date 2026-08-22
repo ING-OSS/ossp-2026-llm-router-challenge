@@ -1,0 +1,17 @@
+{
+    "artifact_type":  "ossp-distilled-tiny-package-v1",
+    "runtime_format":  "onnx-float",
+    "model_order":  [
+                        "ax31-light",
+                        "ax31",
+                        "axk1-think"
+                    ],
+    "sha256":  {
+                   "artifacts/model/student.pt":  "e8503250a0e1df9639ff8d81e4ab1fce4f2fb43e7029cb244c7cf2ff435091ed",
+                   "artifacts/model/student.onnx":  "25088adee9d858eaa84f9fb6efc18572c1c47fbc4f5ff0a576ad62c02703b902",
+                   "artifacts/model/student.train-dev.onnx":  "4a38178365707149a58a8e3d7c1996289fd7bb654e809ccc28aeb8533e757359",
+                   "artifacts/model/preprocess.json":  "824275ed620ada6eba48ecf9dd3f44f291d0e0c552b2fdbed61db0283f92f92b",
+                   "artifacts/tokenizer/vocab.txt":  "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+                   "artifacts/training/full-teacher-targets.npz":  "f88acfc766dc470d4eca5ecb3ad17044ccb042977935722c2c9784fa969e6eb5"
+               }
+}
