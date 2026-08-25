@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "name": "marginal-router",
+  "purpose": "Team-facing documentation of the prompt-only marginal-value and budget-aware routing research line.",
+  "model_ids": ["ax31-light", "ax31", "axk1-think"],
+  "core_method": [
+    "prompt-only quality/gain prediction",
+    "cost and tail-risk prediction",
+    "marginal upgrade allocation",
+    "donor-funded budget recovery",
+    "tier-specific budget constraints"
+  ],
+  "primary_candidate": {
+    "version": "V24",
+    "profile": "prefix-total7",
+    "final_score": 0.706335227273,
+    "fast_quality": 0.669602272727,
+    "fast_cost": 1.24282892792,
+    "fast_margin": 0.00717107208,
+    "fast_k1": 7
+  },
+  "raw_score_champion": {
+    "version": "V29",
+    "profile": "consensus-o18-d4",
+    "final_score": 0.707244318182,
+    "fast_quality": 0.671875,
+    "fast_cost": 1.246792056836,
+    "fast_margin": 0.003207943164,
+    "fast_k1": 9
+  },
+  "defensive_candidate": {
+    "version": "V20",
+    "profile": "prefix-total18",
+    "final_score": 0.705426136364,
+    "fast_quality": 0.667329545455,
+    "fast_cost": 1.238180334357,
+    "fast_margin": 0.011819665643,
+    "fast_k1": 6
+  },
+  "runtime_boundary": {
+    "research_docs": "src/marginal_router",
+    "submission_runtime": "src/ossp_router",
+    "container_entrypoint": "container/entrypoint.py"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "package": "marginal_router",
+  "files": [
+    "README.md",
+    "__init__.py",
+    "method.v1.json",
+    "docs/METHOD.md",
+    "docs/EXPERIMENT_HISTORY.md",
+    "docs/VALIDATION.md"
+  ],
+  "note": "Documentation/share package only; official submission runtime lives in src/ossp_router."
+}
