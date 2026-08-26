@@ -183,8 +183,9 @@ container/entrypoint.py
 - [`docs/VALIDATION.md`](docs/VALIDATION.md): 최종 후보 검증 및 runtime 검증 결과
 - [`method.v1.json`](method.v1.json): 기계 판독 가능한 method summary
 
+---
 
---- To 석범 ---
+## --- To 석범 ---
 
 # Marginal Router — V24
 
@@ -680,8 +681,6 @@ src/ossp_router/
 container/entrypoint.py
     공식 컨테이너 entrypoint
 ```
-
-`marginal_router`는 최종 runtime 코드를 복제하는 디렉터리가 아니라, **최종 router가 어떤 원리와 실험을 통해 만들어졌는지 팀원이 빠르게 이해할 수 있도록 설명하는 문서화 영역**이다.
 
 ---
 
