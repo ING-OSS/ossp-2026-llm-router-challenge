@@ -1,4 +1,4 @@
-# Marginal Router
+# Marginal Router yongsoon
 
 `marginal_router`는 SKT Efficient LLM Routing Challenge에서 개발한 **prompt-only, budget-aware LLM router 연구 라인**을 팀 내부에서 공유하기 위한 문서화 패키지다.
 
@@ -182,3 +182,511 @@ container/entrypoint.py
 - [`docs/EXPERIMENT_HISTORY.md`](docs/EXPERIMENT_HISTORY.md): V5~V30 실험 발전 과정
 - [`docs/VALIDATION.md`](docs/VALIDATION.md): 최종 후보 검증 및 runtime 검증 결과
 - [`method.v1.json`](method.v1.json): 기계 판독 가능한 method summary
+
+
+--- To 석범 ---
+
+# Marginal Router — V24
+
+`marginal_router`는 SKT Efficient LLM Routing Challenge에서 개발한 **prompt-only, budget-aware LLM router 연구 라인**이다.
+
+최종 선택 모델은 **V24**이며, 단순한 prompt 난이도 3-class 분류가 아니라 각 모델 upgrade의 **marginal quality gain, 예상 비용, tail risk**를 추정하고 tier별 budget 안에서 전체 allocation을 최적화한다.
+
+> 이 디렉터리는 방법론과 실험 내용을 팀 내부에 공유하기 위한 문서화 영역이다.
+> 실제 최종 runtime은 `src/ossp_router/orchestrator.py`와 `container/entrypoint.py`에 통합되어 있다.
+
+---
+
+## 1. 최종 코드
+
+최종 검증된 runtime은 다음 Git branch/commit에 있다.
+
+```text
+branch:
+submission-v24-final
+
+commit:
+f67644eb6d6e2d84243c87cb85cd7ecd06f58d9f
+
+commit message:
+Finalize v24 submission runtime
+```
+
+실제 최종 runtime 변경 파일:
+
+```text
+src/ossp_router/orchestrator.py
+```
+
+최종 제출 담당자는 위 commit을 기준으로 Docker image와 technical submission metadata를 생성하면 된다.
+
+---
+
+## 2. 핵심 아이디어
+
+전체 방법론은 다음과 같이 요약할 수 있다.
+
+> **Budget-Constrained Marginal Utility Routing with Pairwise Conditional Swaps and Donor-Based Cost Recovery**
+
+사용 가능한 모델 계층:
+
+```text
+ax31-light
+    ↓
+ax31
+    ↓
+axk1-think
+```
+
+라우터는 prompt를 직접 `easy / medium / hard`로 분류하지 않는다.
+
+대신 다음과 같은 **upgrade의 가치**를 추정한다.
+
+```text
+ax31-light → ax31
+ax31       → axk1-think
+```
+
+각 upgrade에 대해 다음 신호를 사용한다.
+
+* 예상 품질 증가 확률
+* 예상 품질 증가 크기
+* 예상 incremental cost
+* cost-tail probability
+* tier budget headroom
+* donor downgrade로 회수할 수 있는 비용
+
+즉 핵심 질문은 다음이다.
+
+> “이 prompt에 더 비싼 모델을 쓰는 것이 추가 비용만큼 가치가 있는가?”
+
+---
+
+## 3. 전체 구조
+
+```text
+Prompt
+  │
+  ▼
+Prompt-only feature extraction
+  │
+  ├── Quality / gain predictors
+  ├── Cost predictors
+  └── Tail-risk predictors
+  │
+  ▼
+Marginal utility estimation
+  │
+  ▼
+Tier-specific allocation
+  │
+  ├── Promotion candidates
+  ├── Donor candidates
+  ├── Pairwise conditional swaps
+  └── Budget / risk constraints
+  │
+  ▼
+Final model ID
+```
+
+---
+
+## 4. Promotion / Donor 구조
+
+Fast tier에서는 특히 **promotion + donor** 방식이 중요하다.
+
+고가치 prompt를:
+
+```text
+ax31 → axk1-think
+```
+
+으로 올리면 품질 향상 가능성이 있지만 비용이 증가한다.
+
+이 비용을 확보하기 위해 상대적으로 `ax31`의 marginal value가 낮은 prompt를:
+
+```text
+ax31 → ax31-light
+```
+
+로 내린다.
+
+이 downgrade prompt를 **donor**라고 한다.
+
+결과적으로:
+
+```text
+고가치 prompt  → 더 비싼 모델
+저가치 prompt  → 더 싼 모델
+전체 allocation → tier budget 유지
+```
+
+를 동시에 최적화한다.
+
+---
+
+## 5. Pairwise Conditional Swap
+
+초기 allocation 이후에도 K1 slot이 가장 가치 있는 prompt에 배치되었는지 다시 확인한다.
+
+예를 들어:
+
+```text
+Prompt A → axk1-think
+Prompt B → ax31
+```
+
+인 상태에서 B의 K1 marginal gain이 더 크다고 예측되면:
+
+```text
+Prompt A → ax31
+Prompt B → axk1-think
+```
+
+으로 교환할 수 있다.
+
+Swap 판단에는 다음 정보를 함께 사용한다.
+
+* conditional K1 gain probability
+* regression-based gain
+* predicted incremental cost
+* receiver tail-risk
+* donor 대비 relative tail-risk
+
+---
+
+## 6. 주요 실험 계보
+
+| Version | 핵심 변화               | 역할                             |
+| ------- | ------------------- | ------------------------------ |
+| V5      | Marginal Value      | quality/cost 기반 초기 allocator   |
+| V9      | Conditional Swap    | pairwise conditional routing   |
+| V10     | Economic Cost       | 비용 및 cost-tail 예측              |
+| V11     | Hard-tail Gate      | Balanced tier risk-aware swap  |
+| V12     | AX31 Swap           | Fast AX31/Light 경계 개선          |
+| V16     | K1 Headroom         | Fast에 K1 promotion 도입          |
+| V17     | Margin Recovery     | donor를 이용한 비용 회수               |
+| V18     | Marginal K1         | 추가 K1 후보 탐색                    |
+| V19     | Ratio Donor         | quality-loss / saving 기반 donor |
+| V20     | Donor Frontier      | 추가 donor frontier 탐색           |
+| V22     | 7th K1              | champion 위에 추가 K1 promotion    |
+| V23     | Consensus Recovery  | 여러 ranking 신호 결합               |
+| V24     | Consensus Frontier  | 최종 primary candidate           |
+| V28     | 9th K1              | raw score 추가 개선                |
+| V29     | Aggressive Champion | Dev raw score 최고               |
+| V30     | Final Stress        | score / budget robustness 비교   |
+
+---
+
+## 7. 최종 V24 runtime chain
+
+### Fast
+
+```text
+V5 competition
+ → V16 k1_8
+ → V17 add4
+ → V18 balanced-r3-d6
+ → V19 ratio-o1-d6
+ → V20 window-o6-d4
+ → V22 balanced-r4-d4
+ → V23 consensus-o7-d4
+ → V24 prefix-total7
+```
+
+Fast에서는 K1 promotion과 donor allocation을 가장 적극적으로 수행한다.
+
+### Balanced
+
+```text
+V5 competition
+ → V11 gate20_cost
+```
+
+V11에서는 K1 slot을 재배치할 때 다음 조건을 hard gate로 사용한다.
+
+* minimum expected quality gain
+* maximum receiver tail probability
+* donor 대비 relative tail-risk
+* predicted cost non-increase
+
+### Premium
+
+```text
+V5 competition
+```
+
+---
+
+## 8. V24를 선택한 이유
+
+Dev raw score 최고 후보는 V29였다.
+
+```text
+V29 final score : 0.707244318182
+V24 final score : 0.706335227273
+```
+
+하지만 Fast budget margin은:
+
+```text
+V29 : 0.003207943164
+V24 : 0.007171072080
+```
+
+으로 V24가 더 넓었다.
+
+V30 stress test에서도 V24가 V29보다 budget failure risk 측면에서 더 안정적이었다.
+
+최종 판단:
+
+```text
+Raw-score leader        : V29
+Primary score/risk pick : V24
+Defensive fallback      : V20
+```
+
+따라서 최종 primary candidate는 **V24**로 선정했다.
+
+---
+
+## 9. 최종 Dev 성능
+
+V24:
+
+```text
+Final score  : 0.706335227273
+
+Fast quality : 0.669602272727
+Fast cost    : 1.242828927920
+Fast margin  : 0.007171072080
+```
+
+Fast model allocation:
+
+```text
+ax31-light : 607
+ax31       : 266
+axk1-think :   7
+```
+
+비교 후보:
+
+```text
+V20 defensive
+Final score = 0.705426136364
+
+V29 aggressive
+Final score = 0.707244318182
+```
+
+---
+
+## 10. 최종 runtime 일반화 수정
+
+초기 exact-chain은 Dev 880문항 기준으로 개발되었기 때문에 일부 단계에 다음과 같은 regression guard가 있었다.
+
+```text
+V19 expected 6 K1 in base
+```
+
+공식 runtime checker는 공개 Train+Dev 전체 **2,640문항**을 실행하므로 K1 개수가 정상적으로 달라지고 해당 assertion이 실패했다.
+
+최종 runtime에서는:
+
+* routing algorithm은 그대로 유지
+* Dev dataset에만 종속된 fixed K1-count assertion만 제거
+
+했다.
+
+수정 후 Dev 결과:
+
+```text
+fast     diff=0
+balanced diff=0
+premium  diff=0
+```
+
+즉 기존 V24와 정확히 동일하다.
+
+---
+
+## 11. V11 runtime 최적화
+
+Balanced tier의 초기 runtime은 2,640문항에서 90초 제한에 근접했다.
+
+분리 측정:
+
+```text
+V5  : 41.24 sec
+V11 : 49.24 sec
+```
+
+프로파일 결과 V11에서 동일한 prompt의 `build_meta_features()`를 반복 계산하고 있었다.
+
+기존:
+
+```text
+2,640 episodes × 2 fallback × 2 repeated extraction
+= 10,560 build_meta_features calls
+```
+
+최종 구현에서는 prompt meta-feature가 fallback-independent라는 점을 이용해:
+
+```text
+episode당 1회 계산
+→ 두 gain/cost head에서 공유
+```
+
+하도록 cache했다.
+
+결과:
+
+```text
+V11 runtime
+49.24 sec → 약 13.5 sec
+```
+
+최적화 전후 결과 비교:
+
+```text
+V11_SUBMISSION_EXACT=True
+V11_REPORT_EXACT=True
+```
+
+즉 runtime 최적화로 인해 routing decision은 전혀 바뀌지 않았다.
+
+---
+
+## 12. 공식 공개 Train+Dev runtime 검증
+
+공식 runtime checker 입력:
+
+```text
+2,640 episodes
+11,780,297 bytes
+```
+
+최종 결과:
+
+```text
+fast:     PASS  64.192 sec / 90 sec
+balanced: PASS  58.774 sec / 90 sec
+premium:  PASS  44.100 sec / 90 sec
+```
+
+세 tier 모두 공식 90초 제한을 통과했다.
+
+---
+
+## 13. 최종 V31.1 validation
+
+최종 runtime에 대해 다음 검증을 통과했다.
+
+```text
+REPO_HYGIENE_OK=True
+EXPECTED_SUBMISSIONS_OK=True
+SOURCE_AUDIT_OK=True
+OFFICIAL_PY311_UNIT_TESTS_OK=True
+```
+
+Docker / runtime:
+
+```text
+image_linux_arm64=PASS
+image_no_volume=PASS
+official_runtime_check=PASS
+```
+
+Exact output:
+
+```text
+fast_exact_expected=PASS
+balanced_exact_expected=PASS
+premium_exact_expected=PASS
+```
+
+Determinism:
+
+```text
+fast_deterministic=PASS
+balanced_deterministic=PASS
+premium_deterministic=PASS
+```
+
+Runtime:
+
+```text
+fast_runtime_90s=PASS
+balanced_runtime_90s=PASS
+premium_runtime_90s=PASS
+```
+
+Metamorphic test:
+
+```text
+id_only_*       = PASS
+order_only_*    = PASS
+id_and_order_*  = PASS
+```
+
+최종 image validation:
+
+```text
+IMAGE_VALIDATION_OK=True
+```
+
+코드/runtime 관점에서는 최종 제출 가능한 상태까지 검증했다.
+
+---
+
+## 14. 최종 제출 담당자가 사용할 정보
+
+```text
+Repository:
+ING-OSS/ossp-2026-llm-router-challenge
+
+Branch:
+submission-v24-final
+
+Validated code commit:
+f67644eb6d6e2d84243c87cb85cd7ecd06f58d9f
+```
+
+최종 제출 담당자는 위 commit을 기준으로:
+
+1. `linux/arm64` Docker image build
+2. 공개 registry push
+3. immutable image digest 확보
+4. `submission-ossp-skt.json` 작성
+5. technical submission validation
+6. 최종 제출 commit 생성
+
+을 진행하면 된다.
+
+특별한 문제가 없다면 검증이 끝난 `orchestrator.py`의 routing logic을 추가 수정하지 않는 것을 권장한다.
+
+---
+
+## 15. 디렉터리 역할
+
+```text
+src/marginal_router/
+    방법론, 실험 과정, 모델 선택 근거 및 팀 공유 문서
+
+src/ossp_router/
+    challenge protocol/runtime 및 최종 통합 router
+
+container/entrypoint.py
+    공식 컨테이너 entrypoint
+```
+
+`marginal_router`는 최종 runtime 코드를 복제하는 디렉터리가 아니라, **최종 router가 어떤 원리와 실험을 통해 만들어졌는지 팀원이 빠르게 이해할 수 있도록 설명하는 문서화 영역**이다.
+
+---
+
+## 16. 한 문장 요약
+
+> **V24 Marginal Router는 prompt별 모델 upgrade의 예상 marginal quality gain과 비용·tail risk를 추정하고, promotion과 donor downgrade를 조합하여 tier budget 안에서 전체 품질을 최대화하는 cost-aware routing system이다.**
+
+
