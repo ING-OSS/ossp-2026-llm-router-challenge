@@ -1,0 +1,6 @@
+# 실행 의존성 고정. 실행 중 다운로드 없이 빌드 단계에서만 설치한다.
+numpy==2.4.4
+scipy==1.17.1
+scikit-learn==1.8.0
+joblib==1.5.3
+threadpoolctl==3.6.0

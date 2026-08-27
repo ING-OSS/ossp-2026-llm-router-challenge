@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+#
+# 제출 이미지. 기준 예시(python:3.11-alpine)는 musl 이라 numpy/scipy/scikit-learn
+# 휠이 없어 소스 빌드가 필요하므로 debian slim 을 사용한다.
+# RUNTIME.md 는 기반 이미지를 강제하지 않는다.
+#
+# 빌드:
+#   docker buildx build --platform linux/arm64 --push \
+#     --file container/Dockerfile.router \
+#     --tag <registry>/<repo>:submission .
+#
+# TODO(제출 전): 아래 다이제스트를 실제 값으로 고정한다.
+#   docker buildx imagetools inspect python:3.11.15-slim-bookworm
+# 규정상 태그만 있는 참조는 받지 않으므로 기반 이미지도 다이제스트로 고정한다.
+
+FROM python:3.11.15-slim-bookworm@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3 AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+COPY container/requirements.txt /tmp/requirements.txt
+
+# --only-binary=:all: 로 소스 빌드를 금지해 재현성을 확보한다.
+RUN python3 -m pip install --prefix=/install --only-binary=:all: \
+        --no-cache-dir -r /tmp/requirements.txt
+
+# ---------------------------------------------------------------- 실행 이미지
+FROM python:3.11.15-slim-bookworm@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3
+
+ARG SOURCE_MANIFEST_SHA256=unbound
+LABEL io.sktelecom.ossp.source-manifest-sha256="${SOURCE_MANIFEST_SHA256}"
+
+# 실행 중 패키지 설치를 막고, BLAS/OpenMP 스레드를 고정한다.
+# 공식 한도는 프로세스+스레드 합계 32개다.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=0 \
+    PYTHONPATH=/opt/router \
+    TMPDIR=/tmp \
+    ROUTER_ARTIFACT=/opt/router/artifacts/router.joblib \
+    OMP_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    NUMEXPR_NUM_THREADS=2 \
+    VECLIB_MAXIMUM_THREADS=2
+
+COPY --from=build /install /usr/local
+
+RUN python3 -m pip uninstall --yes pip setuptools wheel || true
+
+COPY --chown=65532:65532 features.py core.py router_run.py /opt/router/
+COPY --chown=65532:65532 artifacts/router.joblib /opt/router/artifacts/router.joblib
+COPY --chown=65532:65532 container/router-run /usr/local/bin/router-run
+
+RUN chmod 0755 /usr/local/bin/router-run
+
+WORKDIR /opt/router
+USER 65532:65532
+
+# VOLUME 을 선언하면 접수가 거부되므로 선언하지 않는다.
+ENTRYPOINT ["router-run"]

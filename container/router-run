@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+"""router-run 진입점. RUNTIME.md 의 인터페이스를 그대로 따른다."""
+import sys
+sys.path.insert(0, "/opt/router")
+from router_run import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())

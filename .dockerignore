@@ -8,7 +8,6 @@ src/**
 src/ossp_router/**
 !src/ossp_router/__init__.py
 !src/ossp_router/cli.py
-!src/ossp_router/final_router.py
 !src/ossp_router/heuristic.py
 !src/ossp_router/image_evidence.py
 !src/ossp_router/operator_helper.py
@@ -30,3 +29,12 @@ container/**
 !container/Dockerfile
 !container/measurement.Dockerfile
 !container/entrypoint.py
+
+# --- 라우터 제출 이미지용 예외 ---
+!container/requirements.txt
+!container/router-run
+!features.py
+!core.py
+!router_run.py
+!artifacts
+!artifacts/router.joblib
