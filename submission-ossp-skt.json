@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "challenge_id": "ossp-2026-llm-router-challenge",
-  "repository_url": "https://github.com/your-account/your-repo",
-  "commit_sha": "0000000000000000000000000000000000000000",
-  "image_digest": "ghcr.io/your-account/ossp-router@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "repository_url": "https://github.com/ING-OSS/ossp-2026-llm-router-challenge",
+  "commit_sha": "fc014fb7c605615f90cc487073170e553646b71c",
+  "image_digest": "ghcr.io/ing-oss/ossp-router@sha256:d08b3db1fd3da7dc1b3b495eb5ca03cf87ab7200a6b11132e7c4267bff728def",
   "primary_license": "Apache-2.0"
 }
