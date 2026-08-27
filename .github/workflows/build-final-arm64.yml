@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"
-          repository="ghcr.io/${owner}/ossp-2026-llm-router-challenge"
+          repository="ghcr.io/${owner}/ossp-router"
           tag="skt-final-${GITHUB_SHA:0:12}"
           source_manifest="$(PYTHONPATH=src python3 tools/benchmark_runtime.py --print-source-manifest-sha256)"
           echo "repository=${repository}" >> "${GITHUB_OUTPUT}"
@@ -49,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: container/Dockerfile
+          file: container/Dockerfile.router
           platforms: linux/arm64
           push: true
           tags: ${{ steps.release.outputs.repository }}:${{ steps.release.outputs.tag }}
