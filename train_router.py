@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+
 """train_router.py — artifact 학습·저장. 저장소 루트에서 실행."""
 import argparse, json, os, time
 import numpy as np, joblib

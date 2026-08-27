@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+
+**
+!container/
+!container/requirements.txt
+!container/router-run
+!features.py
+!core.py
+!router_run.py
+!artifacts/
+!artifacts/router.joblib

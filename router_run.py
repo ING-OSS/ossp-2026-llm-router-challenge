@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+
 """router_run.py — 추론 전용. router-run --input ... --tier ... --output ..."""
 import os
 # BLAS/OpenMP 스레드 수를 먼저 고정한다. 공식 한도는 프로세스+스레드 합계 32개이며

@@ -29,12 +29,3 @@ container/**
 !container/Dockerfile
 !container/measurement.Dockerfile
 !container/entrypoint.py
-
-# --- 라우터 제출 이미지용 예외 ---
-!container/requirements.txt
-!container/router-run
-!features.py
-!core.py
-!router_run.py
-!artifacts
-!artifacts/router.joblib

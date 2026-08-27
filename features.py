@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+
 """features.py — 프롬프트 → 특징. 학습·추론 공용. 결정적(FNV-1a)."""
 from __future__ import annotations
 import math, re

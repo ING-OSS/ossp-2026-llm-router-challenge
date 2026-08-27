@@ -679,6 +679,10 @@ class RepositoryPolicyTest(unittest.TestCase):
                 continue
             if any(part.endswith(".egg-info") for part in relative.parts):
                 continue
+            # Participant-trained artifact built only from the public Train data.
+            # It is intentionally binary, so do not decode it as repository text.
+            if relative.as_posix() == "artifacts/router.joblib":
+                continue
             text_files.append(path)
 
         forbidden_text = (
@@ -715,6 +719,14 @@ class RepositoryPolicyTest(unittest.TestCase):
                         f"{path.relative_to(ROOT).as_posix()}:{pattern.pattern}"
                     )
         self.assertEqual([], sorted(findings))
+
+        # Keep the participant artifact exception narrow and content-addressed.
+        participant_artifact = ROOT / "artifacts/router.joblib"
+        self.assertTrue(participant_artifact.is_file())
+        self.assertEqual(
+            "1316754ed7b0aec1b2de90964f1dd712e3d312be8ebc155054c60f41438093b5",
+            hashlib.sha256(participant_artifact.read_bytes()).hexdigest(),
+        )
 
         model_suffixes = {
             ".bin",

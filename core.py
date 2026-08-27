@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright 2026 OSSP Router Team
+# SPDX-License-Identifier: Apache-2.0
+
 """core.py — 비용모델 / score head / 배분기 / artifact 직렬화."""
 from __future__ import annotations
 import numpy as np
