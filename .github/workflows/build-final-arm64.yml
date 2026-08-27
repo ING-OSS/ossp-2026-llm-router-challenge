@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: Copyright 2026 SK TELECOM CO., LTD.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Build final ARM64 image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out selected code commit
+        uses: actions/checkout@v4
+
+      - name: Enable ARM64 emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve image name and source manifest
+        id: release
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repository="ghcr.io/${owner}/ossp-2026-llm-router-challenge"
+          tag="skt-final-${GITHUB_SHA:0:12}"
+          source_manifest="$(PYTHONPATH=src python3 tools/benchmark_runtime.py --print-source-manifest-sha256)"
+          echo "repository=${repository}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "source_manifest=${source_manifest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push linux/arm64 image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: container/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.release.outputs.repository }}:${{ steps.release.outputs.tag }}
+          build-args: |
+            SOURCE_MANIFEST_SHA256=${{ steps.release.outputs.source_manifest }}
+          provenance: false
+          sbom: false
+
+      - name: Record immutable submission image
+        env:
+          IMAGE_REPOSITORY: ${{ steps.release.outputs.repository }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        shell: bash
+        run: |
+          immutable_image="${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
+          printf '%s\n' "${immutable_image}" | tee "${RUNNER_TEMP}/image-digest.txt"
+          {
+            echo "## Final ARM64 image"
+            echo
+            echo "Code commit: \`${GITHUB_SHA}\`"
+            echo
+            echo "Image: \`${immutable_image}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload digest record
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-arm64-image-digest
+          path: ${{ runner.temp }}/image-digest.txt
+          if-no-files-found: error

@@ -495,7 +495,7 @@ def load_image_size_evidence(path: Path) -> ImageSizeEvidence:
     }
     if not isinstance(value, dict) or set(value) != expected_keys:
         raise InfrastructureUnavailable(
-            "이미지 크기 증거의 필드 구성이 올바르지 않습니다."
+            "이미지 크기 증거 JSON의 필드 구성이 올바르지 않습니다."
         )
     if (
         isinstance(value["schema_version"], bool)

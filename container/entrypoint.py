@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from ossp_router.orchestrator import final_router_main as main
+from ossp_router.final_router import main
 
 
 if __name__ == "__main__":
